@@ -33,9 +33,9 @@ class Product extends Model
 What this packages do?
 
 - Manages file upload related to a model
-- Uploaded files are stored using Laravel's Storage (Default disks: public)
+- Uploaded files are stored using Laravel's Storage (Default disks is `public`)
 - You dont have to create additional database tables/fields
-- The 'upload_*' mutators and accessors is unlimited.
+- The `upload_*` mutators and accessors is unlimited, but please consider using `uploads` mutator for multiple files
 - Attach 'HasUploads' in any models and stop worrying about storing upload files. 
 
 Lets see example:
