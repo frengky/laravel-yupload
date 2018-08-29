@@ -1,0 +1,31 @@
+{
+    "name": "frengky/yupload",
+    "description": "Laravel package for easy file uploads maintenance",
+    "keywords": ["laravel", "model", "upload", "database"],
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/frengky/laravel-yupload",
+    "authors": [
+        {
+            "name": "Frengky",
+            "email": "frengky.lim@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "illuminate/database": "5.*",
+        "illuminate/support": "5.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Frengky\\Yupload\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+              "Frengky\\Yupload\\UploadServiceProvider"
+            ]
+        }
+    }
+}
