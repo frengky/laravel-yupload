@@ -3,8 +3,14 @@
 Laravel package for easy file uploads maintenance
 
 ## Installation
+Install the package via `Composer`
 ```
 composer require frengky/yupload
+```
+
+Run the migrations to create the `uploads` table
+```
+php artisan migrate
 ```
 
 ## Usage
@@ -26,12 +32,15 @@ class Product extends Model
 ```
 What this packages do?
 
+- Manages file upload related to a model
 - Uploaded files are stored using Laravel's Storage (Default disks: public)
 - You dont have to create additional database tables/fields
 - The 'upload_*' mutators and accessors is unlimited.
 - Attach 'HasUploads' in any models and stop worrying about storing upload files. 
 
-Example:
+Lets see example:
+
+Saving uploaded file via `uploads` and `upload_` mutators
 ```
 
 class ProfileController extends Controller
@@ -52,8 +61,19 @@ class ProfileController extends Controller
         $product = Product::find(1);
         $product->upload_image1 = $request->file('image1'); 
         $product->uploads = $request->images;
+        
+        // Delete the product, will also delete all file uploads 
+        // which related to this product
+        $product->delete();
     }
 }
 
 ```
-More detailed guide coming soon.
+
+Acessing via `upload_` accessor
+```
+$photo = $user->upload_photo;
+$photoUrl = (string) $user->upload_photo;
+```
+
+More detailed guide coming up soon.
