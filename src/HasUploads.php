@@ -3,6 +3,7 @@
 namespace Frengky\Yupload;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 
 /**
  * Trait for entity that their uploads are maintained by us
@@ -165,7 +166,9 @@ trait HasUploads
 
         $path = snake_case((new \ReflectionClass($this))->getShortName());
 
-        $fullpath = Upload::storage()->putFile($path, $file);
+        $ext = $file->getClientOriginalExtension();
+        $filename = Str::random(40) . ( $ext ? ".$ext" : '' );
+        $fullpath = Upload::storage()->putFileAs($path, $file, $filename);
 
         if (empty($fullpath))
             throw new UploadException('Unable to store the uploaded file');
@@ -173,7 +176,7 @@ trait HasUploads
         return [
             'mimetype' => $file->getClientMimeType(),
             'name' => $file->getClientOriginalName(),
-            'path' => $path . '/' . basename($fullpath),
+            'path' => $path . '/' . $filename,
             'size' => $file->getSize(),
             'type' => $type
         ];
