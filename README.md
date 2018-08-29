@@ -2,20 +2,32 @@
 
 Laravel package for easy file uploads maintenance
 
+What this packages do?
+
+- Manages file uploads related to a model
+- Uploaded file are stored using `Storage`, no need path config, respecting your `config/filesystem.php`
+- Dont need to create extra database tables/fields, thanks to dynamic `upload_*` mutator and accessor.
+- Store multiple files via `uploads` mutator and accessor
+- Any uploaded files are maintained, its deleted and replaced automatically on updates. 
+
 ## Installation
 Install the package via `Composer`
 ```
 composer require frengky/yupload
 ```
-
-Run the migrations to create the `uploads` table
+Then publish the configuration files to your `app/config`
+```
+php artisan vendor:publish --tag=config
+```
+Finally, run migrations to create the `uploads` table
 ```
 php artisan migrate
 ```
 
 ## Usage
-Configure up your model that have file uploads operations
-```
+
+For each of your model that have file uploads, use the `HasUploads` traits
+```php
 use Frengky\Yupload\HasUploads;
 
 class User extends Authenticatable
@@ -30,18 +42,12 @@ class Product extends Model
     //
 }
 ```
-What this packages do?
 
-- Manages file upload related to a model
-- Uploaded files are stored using Laravel's Storage (Default disks is `public`)
-- You dont have to create additional database tables/fields
-- The `upload_*` mutators and accessors is unlimited, but please consider using `uploads` mutator for multiple files
-- Attach 'HasUploads' in any models and stop worrying about storing upload files. 
 
-Lets see example:
+## Some examples
 
 Saving uploaded file via `uploads` and `upload_` mutators
-```
+```php
 
 class ProfileController extends Controller
 {
@@ -49,31 +55,50 @@ class ProfileController extends Controller
     {
         $user = User::find(1);
         
-        // Store uploaded photo for this model
+        // Store single file
         $user->upload_photo = $request->file('photo');
         
         // Update, the previous file will be replaced
         $user->upload_photo = $request->file('anotherphoto');
         
-        // Store multiple attachments
+        // Store multiple files
         $user->uploads = $request->files;
-        
-        $product = Product::find(1);
-        $product->upload_image1 = $request->file('image1'); 
-        $product->uploads = $request->images;
-        
-        // Delete the product, will also delete all file uploads 
-        // which related to this product
-        $product->delete();
+        $user->uploads = $request->file('anotherfile1');
+        $user->uploads = $request->file('anotherfile2');
+    }
+    
+    public function downloadPhoto()
+    {
+        // Force downloading the file
+        return User::find(1)->upload_photo->download();
     }
 }
 
 ```
 
-Acessing via `upload_` accessor
-```
-$photo = $user->upload_photo;
-$photoUrl = (string) $user->upload_photo;
+Acessing uploaded file via `uploads` and `upload_` accessor
+```php
+$onlyPhoto = $product->upload_image1;
+if ($onlyPhoto->isImage()) {
+   // do something
+}
+
+$photoUrl = (string) $product->upload_image1;
+
+$allFiles = $product->uploads;
 ```
 
-More detailed guide coming up soon.
+Deleting uploaded file
+```php
+// Delete single uploaded file
+$userPhoto = $user->upload_photo;
+$userPhoto->delete();
+
+// Delete all uploaded file related to this entity
+$user->deleteUploads();
+
+// Deleting the entity also delete all related uploaded file
+$user->delete();
+```
+
+That's all for now.

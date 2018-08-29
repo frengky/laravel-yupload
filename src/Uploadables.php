@@ -13,7 +13,7 @@ trait Uploadables
      */
     public static function storage()
     {
-        return Storage::disk(env('UPLOAD_STORAGE_DISK', 'public'));
+        return Storage::disk(config('yupload.storage_disk'));
     }
 
     /**
