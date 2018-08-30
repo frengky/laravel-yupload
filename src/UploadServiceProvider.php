@@ -11,7 +11,7 @@ class UploadServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadMigrationsFrom(realpath(__DIR__.'/../migrations'));
+        $this->loadMigrationsFrom(realpath(__DIR__ . '/../database/migrations'));
 
         $this->publishes([
             realpath(__DIR__.'/../config/yupload.php') => config_path('yupload.php')

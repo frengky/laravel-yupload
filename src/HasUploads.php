@@ -39,6 +39,17 @@ trait HasUploads
     }
 
     /**
+     * The accessors for getting all uploaded files
+     *
+     * @param mixed $value
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getUploadsAttribute($value)
+    {
+        return $this->uploads()->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
      * Get the entity's single uploads
      *
      * $userUpload = $user->upload
@@ -74,6 +85,17 @@ trait HasUploads
                 return;
             }
         }
+    }
+
+    /**
+     * The accessors for getting single uploaded files
+     *
+     * @param $value
+     * @return Upload|null
+     */
+    public function getUploadAttribute($value)
+    {
+        return $this->upload()->first();
     }
 
     /**
@@ -230,19 +252,6 @@ trait HasUploads
             return $this;
         }
         return parent::setAttribute($key, $value);
-    }
-
-    /**
-     * Override perform the actual delete query on this model instance.
-     *
-     * @return void
-     */
-    protected function performDeleteOnModel()
-    {
-        parent::performDeleteOnModel();
-
-        // Delete all left over uploads
-        $this->deleteUploads();
     }
 
     /**
