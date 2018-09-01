@@ -13,6 +13,22 @@ use Illuminate\Support\Str;
 trait HasUploads
 {
     /**
+     * Register deleted event on the entity to
+     * delete all uploads when entity has been deleted
+     */
+    protected static function bootHasUploads()
+    {
+        static::deleted(function ($entity) {
+            /** @var HasUploads $entity */
+            if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($entity)) &&
+                !$entity->isForceDeleting()) {
+                return;
+            }
+            $entity->deleteUploads();
+        });
+    }
+
+    /**
      * Get the entity's uploads collections.
      *
      * $userUploads = $user->uploads;

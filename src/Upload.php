@@ -52,13 +52,4 @@ class Upload extends Model
      * @var array
      */
     protected $hidden = [ 'uploadable_type', 'uploadable_id' ];
-
-    /**
-     * Override the boot to register the observer
-     */
-    protected static function boot()
-    {
-        parent::boot();
-        static::observe(UploadObserver::class);
-    }
 }

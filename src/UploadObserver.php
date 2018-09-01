@@ -34,7 +34,7 @@ class UploadObserver
     }
 
     /**
-     * Handle when model is deleting
+     * Handle when model is deleted
      *
      * @param Upload $upload
      * @return bool

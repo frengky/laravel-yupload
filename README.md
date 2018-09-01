@@ -83,12 +83,15 @@ if ($onlyPhoto->isImage()) {
    // do something
 }
 
+// Getting full url to the uploaded file
 $photoUrl = (string) $product->upload_image1;
 
+// All uploaded file for this entity
 $allFiles = $product->uploads;
 ```
 
 Deleting uploaded file
+
 ```php
 // Delete single uploaded file
 $userPhoto = $user->upload_photo;
@@ -100,5 +103,6 @@ $user->deleteUploads();
 // Deleting the entity also delete all related uploaded file
 $user->delete();
 ```
+> If your model use **SoftDeletes**, then the uploaded file will be preserved, only deleted on forceDelete();
 
 That's all for now.

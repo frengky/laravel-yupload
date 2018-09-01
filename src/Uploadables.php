@@ -7,6 +7,14 @@ use Storage;
 trait Uploadables
 {
     /**
+     * Observing records to maintain the uploaded files
+     */
+    protected static function bootUploadables()
+    {
+        static::observe(UploadObserver::class);
+    }
+
+    /**
      * The default storage for storing uploaded files
      *
      * @return mixed

@@ -24,7 +24,7 @@ class UploadTests extends TestCase
        Storage::fake('testing');
 
        // Create test user
-       factory(User::class, 1)->create();
+       factory(User::class, 3)->create();
        $this->user = User::find(1);
     }
 
@@ -79,18 +79,19 @@ class UploadTests extends TestCase
      */
     public function testMultipleUploadAndDeleting()
     {
-        $this->user->upload_picture = UploadedFile::fake()->image('picture.jpg');
-        $picture = $this->user->upload_picture;
+        $user = User::find(2);
+        $user->upload_picture = UploadedFile::fake()->image('picture.jpg');
+        $picture = $user->upload_picture;
 
-        $this->user->uploads = UploadedFile::fake()->image('image1.jpg');
-        $this->user->uploads = [
+        $user->uploads = UploadedFile::fake()->image('image1.jpg');
+        $user->uploads = [
             UploadedFile::fake()->image('image2.jpg'),
             UploadedFile::fake()->image('image3.jpg')
         ];
 
         $this->assertNotEmpty($picture);
 
-        $all = $this->user->uploads;
+        $all = $user->uploads;
         $this->assertCount(4, $all);
 
         foreach($all as $each) {
@@ -99,10 +100,11 @@ class UploadTests extends TestCase
         }
 
         // Delete everything
-        $this->user->deleteUploads();
-        $this->assertEmpty($this->user->upload_picture);
-        $this->assertEmpty($this->user->uploads);
-        $this->assertCount(0, $this->user->uploads);
+        $user->forceDelete();
+        $this->assertDatabaseMissing('users', [ 'id' => 2 ]);
+        $this->assertEmpty($user->upload_picture);
+        $this->assertEmpty($user->uploads);
+        $this->assertCount(0, $user->uploads);
 
         $this->assertDatabaseMissing('uploads', [ 'name' => $picture->name ]);
         Storage::disk('testing')->assertMissing($picture->path);
@@ -111,5 +113,20 @@ class UploadTests extends TestCase
             $this->assertDatabaseMissing('uploads', [ 'name' => $each->name ]);
             Storage::disk('testing')->assertMissing($each->path);
         }
+    }
+
+    public function testEntitySoftDeletes()
+    {
+        $user = User::find(3);
+        $user->upload_picture = UploadedFile::fake()->image('picture.jpg');
+        $picture = $user->upload_picture;
+
+        $user->delete(); // Soft delete
+        $this->assertDatabaseHas('uploads', ['name' => $picture->name]);
+        Storage::disk('testing')->assertExists($picture->path);
+
+        $user->forceDelete();
+        $this->assertDatabaseMissing('uploads', ['name' => $picture->name]);
+        Storage::disk('testing')->assertMissing($picture->path);
     }
 }
