@@ -94,7 +94,7 @@ trait HasUploads
         if ($value instanceof UploadedFile) {
             try {
                 $uploadedFile = $this->uploadedFileAsArray($value);
-                $current = $this->uploadsFor(null)->orderBy('created_at', 'desc')->first();
+                $current = $this->uploads()->ofType(null)->orderBy('created_at', 'desc')->first();
                 if ($current) {
                     $current->update($uploadedFile);
                 } else {
@@ -168,28 +168,19 @@ trait HasUploads
     }
 
     /**
-     * Get the Upload query based by type value
-     *
-     * @param string|null $type
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
-     */
-    public function uploadsFor($type = null)
-    {
-        if (empty($type)) {
-            return $this->uploads()->whereNull('type');
-        }
-
-        return $this->uploads()->whereIn('type', is_array($type) ? $type : [$type]);
-    }
-
-    /**
      * Delete all associated Upload records for this entity (also delete file from the storage)
+     *
+     * @return int
      */
     public function deleteUploads()
     {
-        collect($this->uploads()->get())->each(function($upload) {
-            $upload->delete();
-        });
+        $count = 0;
+        foreach($this->uploads()->get() as $upload) {
+            if ($upload->delete()) {
+                $count++;
+            }
+        }
+        return $count;
     }
 
     /**
@@ -236,7 +227,7 @@ trait HasUploads
     public function getAttribute($key)
     {
         if ($type = $this->getUploadTypeFromAttribute($key)) {
-            return $this->uploadsFor($type)->orderBy('created_at', 'desc')->first();
+            return $this->uploads()->ofType($type)->orderBy('created_at', 'desc')->first();
         }
         return parent::getAttribute($key);
     }
@@ -258,7 +249,7 @@ trait HasUploads
         if ($type = $this->getUploadTypeFromAttribute($key)) {
             if ($value instanceof UploadedFile) {
                 try {
-                    $current = $this->uploadsFor($type)->orderBy('created_at', 'desc')->first();
+                    $current = $this->uploads()->ofType($type)->orderBy('created_at', 'desc')->first();
                     if ($current) {
                         $current->update($this->uploadedFileAsArray($value, $type));
                     } else {
@@ -287,5 +278,58 @@ trait HasUploads
             return substr($attribute, strlen($prefix), strlen($attribute));
         }
         return '';
+    }
+
+    /**
+     * Override entity Create method to process upload_ attributes if found
+     *
+     * @param array $attributes
+     * @return mixed
+
+    public static function create(array $attributes = [])
+    {
+        $model = static::query()->create($attributes);
+        if (! empty($model)) {
+            $model->uploadFromAttributes($attributes);
+        }
+        return $model;
+    }*/
+
+    /**
+     * Update the model in the database.
+     *
+     * @param  array  $attributes
+     * @param  array  $options
+     * @return bool
+     */
+    public function update(array $attributes = [], array $options = [])
+    {
+        $result = parent::update($attributes, $options);
+
+        $this->uploadFromAttributes($attributes);
+
+        return $result;
+    }
+
+    /**
+     * Look for upload_* in attributes and execute if found
+     */
+    public function uploadFromAttributes(array $attributes)
+    {
+        foreach ($attributes as $key => $value) {
+            if ($type = $this->getUploadTypeFromAttribute($key)) {
+                $attribute = 'upload_'.$type;
+                $this->$attribute = $value;
+            } else {
+                switch ($key) {
+                    case 'upload':
+                        $this->upload = $value;
+                        break;
+                    case 'uploads':
+                        $this->uploads = $value;
+                        break;
+                }
+            }
+        }
     }
 }

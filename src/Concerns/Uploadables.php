@@ -27,6 +27,21 @@ trait Uploadables
     }
 
     /**
+     * Scope a query to only include uploads of a given type.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param mixed $type
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOfType($query, $type = null)
+    {
+        if (empty($type)) {
+            return $query->whereNull('type');
+        }
+        return $query->whereIn('type', is_array($type) ? $type : [$type]);
+    }
+
+    /**
      * Return a response that force user's browser to download
      * with the original file name
      *

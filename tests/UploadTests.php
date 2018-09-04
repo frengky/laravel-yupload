@@ -129,4 +129,53 @@ class UploadTests extends TestCase
         $this->assertDatabaseMissing('uploads', ['name' => $picture->name]);
         Storage::disk('testing')->assertMissing($picture->path);
     }
+
+    public function testEntityCreate()
+    {
+        $user = User::create([
+            'name' => 'Test',
+            'email' => 'test',
+            'password' => 'test',
+            // 'upload_pic' => UploadedFile::fake()->image('pic.jpg')
+        ]);
+        $user->upload_pic = UploadedFile::fake()->image('pic.jpg');
+
+        $this->assertNotEmpty($user);
+        $this->assertDatabaseHas('users', ['name' => 'Test', 'email' => 'test', 'password' => 'test']);
+        $pic = $user->upload_pic;
+
+        $this->assertNotEmpty($pic);
+        $this->assertDatabaseHas('uploads', ['name' => $pic->name]);
+        Storage::disk('testing')->assertExists($pic->path);
+
+        $user->forceDelete();
+        $this->assertDatabaseMissing('uploads', ['name' => $pic->name]);
+        Storage::disk('testing')->assertMissing($pic->path);
+    }
+
+    public function testEntityUpdate()
+    {
+        $user = User::create([
+            'name' => 'Test',
+            'email' => 'test',
+            'password' => 'test'
+        ]);
+        $this->assertNotEmpty($user);
+        $this->assertDatabaseHas('users', ['name' => 'Test', 'email' => 'test', 'password' => 'test']);
+
+        $user->update([
+            'email' => 'anothertest',
+            'upload_img' => UploadedFile::fake()->image('img.jpg')
+        ]);
+        $this->assertDatabaseHas('users', ['name' => 'Test', 'email' => 'anothertest', 'password' => 'test']);
+        $img = $user->upload_img;
+
+        $this->assertNotEmpty($img);
+        $this->assertDatabaseHas('uploads', ['name' => $img->name]);
+        Storage::disk('testing')->assertExists($img->path);
+
+        $user->forceDelete();
+        $this->assertDatabaseMissing('uploads', ['name' => $img->name]);
+        Storage::disk('testing')->assertMissing($img->path);
+    }
 }
