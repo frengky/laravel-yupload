@@ -4,6 +4,8 @@ namespace Frengky\Yupload;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Frengky\Yupload\Concerns\Uploadables;
+
 /**
  * Model for handling file upload
  *

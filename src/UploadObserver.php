@@ -4,6 +4,8 @@ namespace Frengky\Yupload;
 
 use Illuminate\Support\Str;
 
+use Storage;
+
 class UploadObserver
 {
     /**
@@ -28,7 +30,8 @@ class UploadObserver
     {
         $originalPath = $upload->getOriginal('path');
         if ($upload->path != $originalPath) {
-            Upload::storage()->delete($originalPath);
+            Storage::disk(config('yupload.storage_disk'))
+                ->delete($originalPath);
         }
         return true;
     }
@@ -41,7 +44,8 @@ class UploadObserver
      */
     public function deleted(Upload $upload)
     {
-        Upload::storage()->delete($upload->getOriginal('path'));
+        Storage::disk(config('yupload.storage_disk'))
+            ->delete($upload->getOriginal('path'));
         return true;
     }
 }

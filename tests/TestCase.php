@@ -35,6 +35,7 @@ abstract class TestCase extends BaseTestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('yupload.storage_disk', 'testing');
+        $app['config']->set('yupload.tmp_path', 'tmp');
     }
 
     /**

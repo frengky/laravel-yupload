@@ -1,6 +1,8 @@
 <?php
 
-namespace Frengky\Yupload;
+namespace Frengky\Yupload\Concerns;
+
+use Frengky\Yupload\UploadObserver;
 
 use Storage;
 
@@ -12,16 +14,6 @@ trait Uploadables
     protected static function bootUploadables()
     {
         static::observe(UploadObserver::class);
-    }
-
-    /**
-     * The default storage for storing uploaded files
-     *
-     * @return mixed
-     */
-    public static function storage()
-    {
-        return Storage::disk(config('yupload.storage_disk'));
     }
 
     /**

@@ -1,9 +1,13 @@
 <?php
 
-namespace Frengky\Yupload;
+namespace Frengky\Yupload\Concerns;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+
+use Frengky\Yupload\Upload;
+
+use Storage;
 
 /**
  * Trait for entity that their uploads are maintained by us
@@ -206,7 +210,7 @@ trait HasUploads
 
         $ext = $file->getClientOriginalExtension();
         $filename = Str::random(40) . ( $ext ? ".$ext" : '' );
-        $fullpath = Upload::storage()->putFileAs($path, $file, $filename);
+        $fullpath = Storage::disk(config('yupload.storage_disk'))->putFileAs($path, $file, $filename);
 
         if (empty($fullpath))
             throw new UploadException('Unable to store the uploaded file');

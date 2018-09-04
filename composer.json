@@ -14,7 +14,8 @@
     "require": {
         "php": ">=5.5.9",
         "illuminate/database": "5.*",
-        "illuminate/support": "5.*"
+        "illuminate/support": "5.*",
+        "intervention/image": "^2.4"
     },
     "require-dev": {
         "orchestra/database": "~3.1",
