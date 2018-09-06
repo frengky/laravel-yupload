@@ -10,9 +10,6 @@ use Illuminate\Support\Facades\Storage;
 
 class UploadTests extends TestCase
 {
-    /** @var User */
-    protected $user;
-
     /**
      * Setup the test environment
      */
@@ -25,93 +22,133 @@ class UploadTests extends TestCase
 
        // Create test user
        factory(User::class, 3)->create();
-       $this->user = User::find(1);
     }
 
-    /**
-     * Test uploaded file should be saved, stored and deleted correctly
-     */
-    public function testSingleUploadAndDeleting()
+    public function testUploadByCreate()
     {
-        $this->user->upload = UploadedFile::fake()->image('photo.jpg');
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'photo.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'one.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'two.jpg' ]);
 
-        $photo = $this->user->upload;
-        $this->assertNotEmpty($photo);
-        $this->assertDatabaseHas('uploads', [
-            'uploadable_id' => $this->user->id,
-            'name' => 'photo.jpg'
+        $user = User::create([
+            'name' => 'Test',
+            'email' => 'test',
+            'password' => 'test',
+            'upload_photo' => UploadedFile::fake()->image('photo.jpg'),
+            'uploads' => [
+                UploadedFile::fake()->image('one.jpg'),
+                UploadedFile::fake()->image('two.jpg')
+            ]
         ]);
+
+        // Begins common check
+        $this->assertCount(3, $user->uploads);
+        $this->assertCount(1, $user->uploads()->ofType('photo')->get());
+        $this->assertCount(2, $user->uploads()->ofType(null)->get());
+
+        $photo = $user->upload_photo;
+        $this->assertNotEmpty($photo);
+        $this->assertDatabaseHas('uploads', [ 'uploadable_id' => $user->id, 'name' => $photo->name ]);
+        $this->assertNotEmpty($photo->path);
         Storage::disk('testing')->assertExists($photo->path);
 
         $photo->delete();
-        $this->assertDatabaseMissing('uploads', [ 'name' => 'photo.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => $photo->name ]);
         Storage::disk('testing')->assertMissing($photo->path);
 
-        $this->assertEmpty($this->user->upload);
+        $user->deleteUploads();
+        foreach($user->uploads as $upload) {
+            $this->assertDatabaseMissing('uploads', [ 'name' => $upload->name ]);
+            Storage::disk('testing')->assertMissing($upload->path);
+        }
     }
 
-    /**
-     * Test upload_* mutator accessor, old uploaded file and records should be removed on updates
-     */
-    public function testSingleMutatorAccessorUpdate()
+    public function testUploadByAccessorAndMutators()
     {
-        $this->user->upload_selfie = UploadedFile::fake()->image('selfie1.jpg');
-        $old = $this->user->upload_selfie;
-        $this->assertNotEmpty($old);
-
-        $this->user->upload_selfie = UploadedFile::fake()->image('selfie2.jpg');
-        $new = $this->user->upload_selfie;
-        $this->assertNotEmpty($new);
-
-        $this->assertDatabaseMissing('uploads', [ 'name' => $old->name ]);
-        Storage::disk('testing')->assertMissing($old->path);
-
-        $this->assertDatabaseHas('uploads', [ 'name' => $new->name ]);
-        Storage::disk('testing')->assertExists($new->path);
-
-        $new->delete();
-        $this->assertDatabaseMissing('uploads', [ 'name' => $new->name ]);
-        Storage::disk('testing')->assertMissing($new->path);
-    }
-
-    /**
-     * Test multiple uploaded file should be saved, stored and deleted correctly
-     */
-    public function testMultipleUploadAndDeleting()
-    {
-        $user = User::find(2);
-        $user->upload_picture = UploadedFile::fake()->image('picture.jpg');
-        $picture = $user->upload_picture;
-
-        $user->uploads = UploadedFile::fake()->image('image1.jpg');
+        $user = User::find(1);
+        $user->upload_photo = UploadedFile::fake()->image('photo.jpg');
         $user->uploads = [
-            UploadedFile::fake()->image('image2.jpg'),
-            UploadedFile::fake()->image('image3.jpg')
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg')
         ];
 
-        $this->assertNotEmpty($picture);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'photo.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'one.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'two.jpg' ]);
 
-        $all = $user->uploads;
-        $this->assertCount(4, $all);
+        $user->save();
 
-        foreach($all as $each) {
-            $this->assertDatabaseHas('uploads', [ 'name' => $each->name ]);
-            Storage::disk('testing')->assertExists($each->path);
+        // Begins common check
+        $this->assertCount(3, $user->uploads);
+        $this->assertCount(1, $user->uploads()->ofType('photo')->get());
+        $this->assertCount(2, $user->uploads()->ofType(null)->get());
+
+        $photo = $user->upload_photo;
+        $this->assertNotEmpty($photo);
+        $this->assertDatabaseHas('uploads', [ 'uploadable_id' => $user->id, 'name' => $photo->name ]);
+        $this->assertNotEmpty($photo->path);
+        Storage::disk('testing')->assertExists($photo->path);
+
+        $photo->delete();
+        $this->assertDatabaseMissing('uploads', [ 'name' => $photo->name ]);
+        Storage::disk('testing')->assertMissing($photo->path);
+
+        $user->deleteUploads();
+        foreach($user->uploads as $upload) {
+            $this->assertDatabaseMissing('uploads', [ 'name' => $upload->name ]);
+            Storage::disk('testing')->assertMissing($upload->path);
         }
+    }
 
-        // Delete everything
-        $user->forceDelete();
-        $this->assertDatabaseMissing('users', [ 'id' => 2 ]);
-        $this->assertEmpty($user->upload_picture);
-        $this->assertEmpty($user->uploads);
-        $this->assertCount(0, $user->uploads);
 
-        $this->assertDatabaseMissing('uploads', [ 'name' => $picture->name ]);
-        Storage::disk('testing')->assertMissing($picture->path);
+    public function testUploadUpdating()
+    {
+        $user = User::find(1);
+        $user->fill([
+            'upload_photo' => UploadedFile::fake()->image('photo.jpg'),
+            'uploads' => [
+                UploadedFile::fake()->image('one.jpg'),
+                UploadedFile::fake()->image('two.jpg')
+            ]
+        ]);
 
-        foreach($all as $each) {
-            $this->assertDatabaseMissing('uploads', [ 'name' => $each->name ]);
-            Storage::disk('testing')->assertMissing($each->path);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'photo.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'one.jpg' ]);
+        $this->assertDatabaseMissing('uploads', [ 'name' => 'two.jpg' ]);
+
+        $user->save();
+
+        $photo = $user->upload_photo;
+        $this->assertNotEmpty($photo);
+        $this->assertDatabaseHas('uploads', [ 'uploadable_id' => $user->id, 'name' => $photo->name ]);
+        $this->assertNotEmpty($photo->path);
+        Storage::disk('testing')->assertExists($photo->path);
+
+        $user->upload_photo = UploadedFile::fake()->image('photo2.jpg');
+        $user->save();
+
+        $newPhoto = $user->upload_photo;
+        $this->assertNotEmpty($newPhoto);
+        $this->assertDatabaseHas('uploads', [ 'uploadable_id' => $user->id, 'name' => 'photo2.jpg' ]);
+        $this->assertNotEmpty($newPhoto->path);
+        Storage::disk('testing')->assertExists($newPhoto->path);
+
+        $this->assertDatabaseMissing('uploads', [ 'uploadable_id' => $user->id, 'name' => 'photo.jpg' ]);
+        Storage::disk('testing')->assertMissing($photo->path);
+
+        // Begins common check
+        $this->assertCount(3, $user->uploads);
+        $this->assertCount(1, $user->uploads()->ofType('photo')->get());
+        $this->assertCount(2, $user->uploads()->ofType(null)->get());
+
+        $newPhoto->delete();
+        $this->assertDatabaseMissing('uploads', [ 'name' => $newPhoto->name ]);
+        Storage::disk('testing')->assertMissing($newPhoto->path);
+
+        $user->deleteUploads();
+        foreach($user->uploads as $upload) {
+            $this->assertDatabaseMissing('uploads', [ 'name' => $upload->name ]);
+            Storage::disk('testing')->assertMissing($upload->path);
         }
     }
 
@@ -119,7 +156,12 @@ class UploadTests extends TestCase
     {
         $user = User::find(3);
         $user->upload_picture = UploadedFile::fake()->image('picture.jpg');
+        $user->save();
+
         $picture = $user->upload_picture;
+
+        $this->assertTrue($picture->isImage());
+        $this->assertNotEmpty((string) $picture);
 
         $user->delete(); // Soft delete
         $this->assertDatabaseHas('uploads', ['name' => $picture->name]);
@@ -128,54 +170,5 @@ class UploadTests extends TestCase
         $user->forceDelete();
         $this->assertDatabaseMissing('uploads', ['name' => $picture->name]);
         Storage::disk('testing')->assertMissing($picture->path);
-    }
-
-    public function testEntityCreate()
-    {
-        $user = User::create([
-            'name' => 'Test',
-            'email' => 'test',
-            'password' => 'test',
-            // 'upload_pic' => UploadedFile::fake()->image('pic.jpg')
-        ]);
-        $user->upload_pic = UploadedFile::fake()->image('pic.jpg');
-
-        $this->assertNotEmpty($user);
-        $this->assertDatabaseHas('users', ['name' => 'Test', 'email' => 'test', 'password' => 'test']);
-        $pic = $user->upload_pic;
-
-        $this->assertNotEmpty($pic);
-        $this->assertDatabaseHas('uploads', ['name' => $pic->name]);
-        Storage::disk('testing')->assertExists($pic->path);
-
-        $user->forceDelete();
-        $this->assertDatabaseMissing('uploads', ['name' => $pic->name]);
-        Storage::disk('testing')->assertMissing($pic->path);
-    }
-
-    public function testEntityUpdate()
-    {
-        $user = User::create([
-            'name' => 'Test',
-            'email' => 'test',
-            'password' => 'test'
-        ]);
-        $this->assertNotEmpty($user);
-        $this->assertDatabaseHas('users', ['name' => 'Test', 'email' => 'test', 'password' => 'test']);
-
-        $user->update([
-            'email' => 'anothertest',
-            'upload_img' => UploadedFile::fake()->image('img.jpg')
-        ]);
-        $this->assertDatabaseHas('users', ['name' => 'Test', 'email' => 'anothertest', 'password' => 'test']);
-        $img = $user->upload_img;
-
-        $this->assertNotEmpty($img);
-        $this->assertDatabaseHas('uploads', ['name' => $img->name]);
-        Storage::disk('testing')->assertExists($img->path);
-
-        $user->forceDelete();
-        $this->assertDatabaseMissing('uploads', ['name' => $img->name]);
-        Storage::disk('testing')->assertMissing($img->path);
     }
 }

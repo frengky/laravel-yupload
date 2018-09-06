@@ -2,18 +2,46 @@
 
 namespace Frengky\Yupload\Concerns;
 
-use Frengky\Yupload\UploadObserver;
-
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Storage;
+
+use Frengky\Yupload\UploadObserver;
 
 trait Uploadables
 {
+    /** @var UploadedFile */
+    protected $uploadedFile;
+
     /**
      * Observing records to maintain the uploaded files
      */
     protected static function bootUploadables()
     {
         static::observe(UploadObserver::class);
+    }
+
+    /**
+     * Create an instance of Upload
+     *
+     * @param UploadedFile $file
+     * @param string $path
+     * @param string $type
+     */
+    public static function make(UploadedFile $file, $path, $type = null)
+    {
+        $model = new self;
+
+        $ext = $file->getClientOriginalExtension();
+        $hashName = Str::random(40) . ( $ext ? ".$ext" : '' );
+
+        $model->fill([
+            'file' => $file,
+            'path' => $path . '/' . $hashName,
+            'type' => $type
+        ]);
+
+        return $model;
     }
 
     /**
@@ -24,6 +52,44 @@ trait Uploadables
     public function uploadable()
     {
         return $this->morphTo();
+    }
+
+    /**
+     * The 'file' mutator to set the UploadedFile
+     *
+     * @param mixed $value
+     */
+    public function setFileAttribute($value)
+    {
+        if (! $value instanceof UploadedFile || ! $value->isValid()) {
+            return;
+        }
+
+        $this->attributes['mimetype'] = $value->getMimeType();
+        $this->attributes['name'] = $value->getClientOriginalName();
+        $this->attributes['size'] = $value->getSize();
+
+        $this->uploadedFile = $value;
+    }
+
+    /**
+     * The 'file' accessor to get the UploadedFile
+     *
+     * @return UploadedFile
+     */
+    public function getFileAttribute()
+    {
+        return $this->uploadedFile;
+    }
+
+    /**
+     * Get the storage for storing the uploaded files
+     *
+     * @return mixed
+     */
+    public function storage()
+    {
+        return Storage::disk(config('yupload.storage_disk'));
     }
 
     /**
@@ -49,7 +115,7 @@ trait Uploadables
      */
     public function download()
     {
-        return self::storage()->download($this->path, $this->name);
+        return $this->storage()->download($this->path, $this->name);
     }
 
     /**
@@ -69,6 +135,6 @@ trait Uploadables
      */
     public function __toString()
     {
-        return self::storage()->url($this->path);
+        return $this->storage()->url($this->path);
     }
 }

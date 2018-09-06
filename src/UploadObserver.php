@@ -4,48 +4,72 @@ namespace Frengky\Yupload;
 
 use Illuminate\Support\Str;
 
-use Storage;
-
 class UploadObserver
 {
     /**
-     * Creating new UUID for each new record
+     * Handle the model "creating" event.
      *
-     * @param Upload $upload
+     * @param mixed $upload
      * @return bool
      */
-    public function creating(Upload $upload)
+    public function creating($upload)
     {
-        $upload->id = Str::uuid()->toString();
-        return true;
+        if ($upload->file) {
+            $upload->{$upload->getKeyName()} = Str::uuid()->toString();
+            list($path, $filename) = explode('/', $upload->path);
+            if ($storagePath = $upload->storage()->putFileAs($path, $upload->file, $filename)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Handle when model is updated
+     * Handle the model "updating" event.
      *
-     * @param Upload $upload
+     * @param mixed $upload
      * @return bool
      */
-    public function updated(Upload $upload)
+    public function updating($upload)
+    {
+        if ($upload->file) {
+            list($path, $filename) = explode('/', $upload->path);
+            $ext = $upload->file->getClientOriginalExtension();
+            $hashName = Str::random(40) . ( $ext ? ".$ext" : '' );
+            $upload->path = $path . '/' . $hashName;
+            if ($storagePath = $upload->storage()->putFileAs($path, $upload->file, $hashName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Handle the model "updated" event.
+     *
+     * @param mixed $upload
+     * @return bool
+     */
+    public function updated($upload)
     {
         $originalPath = $upload->getOriginal('path');
         if ($upload->path != $originalPath) {
-            Storage::disk(config('yupload.storage_disk'))
-                ->delete($originalPath);
+            $upload->storage()->delete($originalPath);
         }
+
         return true;
     }
 
     /**
      * Handle when model is deleted
      *
-     * @param Upload $upload
+     * @param mixed $upload
      * @return bool
      */
-    public function deleted(Upload $upload)
+    public function deleted($upload)
     {
-        Storage::disk(config('yupload.storage_disk'))
-            ->delete($upload->getOriginal('path'));
+        $upload->storage()->delete($upload->getOriginal('path'));
+        
         return true;
     }
 }
