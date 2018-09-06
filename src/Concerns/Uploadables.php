@@ -2,6 +2,7 @@
 
 namespace Frengky\Yupload\Concerns;
 
+use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Storage;
@@ -10,7 +11,7 @@ use Frengky\Yupload\UploadObserver;
 
 trait Uploadables
 {
-    /** @var UploadedFile */
+    /** @var File|UploadedFile */
     protected $uploadedFile;
 
     /**
@@ -24,21 +25,24 @@ trait Uploadables
     /**
      * Create an instance of Upload
      *
-     * @param UploadedFile $file
+     * @param File|UploadedFile $file
      * @param string $path
      * @param string $type
      */
-    public static function make(UploadedFile $file, $path, $type = null)
+    public static function make($file, $path, $type = null)
     {
+        if (! $file instanceof UploadedFile && ! $file instanceof File)
+            throw new \RuntimeException('File must be instance of File or UploadedFile');
+
         $model = new self;
 
-        $ext = $file->getClientOriginalExtension();
+        $ext = $file instanceof UploadedFile ? $file->getClientOriginalExtension() : $file->getExtension();
         $hashName = Str::random(40) . ( $ext ? ".$ext" : '' );
 
         $model->fill([
             'file' => $file,
-            'path' => $path . '/' . $hashName,
-            'type' => $type
+            'path' => rtrim(ltrim($path, '/'), '/') . '/' . $hashName,
+            'type' => empty($type) ? null : $type
         ]);
 
         return $model;
@@ -61,12 +65,15 @@ trait Uploadables
      */
     public function setFileAttribute($value)
     {
-        if (! $value instanceof UploadedFile || ! $value->isValid()) {
+        if (! $value instanceof UploadedFile && ! $value instanceof File)
+            throw new \RuntimeException('File must be instance of File or UploadedFile');
+
+        if ($value instanceof UploadedFile && ! $value->isValid()) {
             return;
         }
 
         $this->attributes['mimetype'] = $value->getMimeType();
-        $this->attributes['name'] = $value->getClientOriginalName();
+        $this->attributes['name'] = $value instanceof UploadedFile ? $value->getClientOriginalName() : $value->getFilename();
         $this->attributes['size'] = $value->getSize();
 
         $this->uploadedFile = $value;
@@ -75,7 +82,7 @@ trait Uploadables
     /**
      * The 'file' accessor to get the UploadedFile
      *
-     * @return UploadedFile
+     * @return File|UploadedFile
      */
     public function getFileAttribute()
     {

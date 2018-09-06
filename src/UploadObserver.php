@@ -2,6 +2,7 @@
 
 namespace Frengky\Yupload;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 class UploadObserver
@@ -34,7 +35,7 @@ class UploadObserver
     {
         if ($upload->file) {
             list($path, $filename) = explode('/', $upload->path);
-            $ext = $upload->file->getClientOriginalExtension();
+            $ext = $upload->file instanceof UploadedFile ? $upload->file->getClientOriginalExtension() : $upload->file->getExtension();
             $hashName = Str::random(40) . ( $ext ? ".$ext" : '' );
             $upload->path = $path . '/' . $hashName;
             if ($storagePath = $upload->storage()->putFileAs($path, $upload->file, $hashName)) {

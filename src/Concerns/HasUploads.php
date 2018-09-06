@@ -2,8 +2,6 @@
 
 namespace Frengky\Yupload\Concerns;
 
-use Illuminate\Http\UploadedFile;
-
 use Frengky\Yupload\Upload;
 
 trait HasUploads {

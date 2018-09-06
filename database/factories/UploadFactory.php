@@ -1,9 +1,9 @@
 <?php
 
 use Faker\Generator as Faker;
-use Frengky\Yupload\Upload;
 use Illuminate\Http\File;
 use Illuminate\Support\Str;
+use Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 |
 */
 
-$factory->define(Upload::class, function (Faker $faker) {
+$factory->define(\Frengky\Yupload\Upload::class, function (Faker $faker) {
 
     $image = $faker->image(null, 640, 480, 'people');
     $file = new File($image);
@@ -24,7 +24,7 @@ $factory->define(Upload::class, function (Faker $faker) {
     $filename = Str::random(40) . ".$ext";
 
     $path = config('yupload.tmp_path');
-    $fullpath = Upload::storage()->putFileAs($path, $file, $filename);
+    $fullpath = Storage::disk(config('yupload.storage_disk'))->putFileAs($path, $file, $filename);
 
     return [
         'id' => $faker->uuid,
