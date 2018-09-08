@@ -126,6 +126,16 @@ trait Uploadables
     }
 
     /**
+     * Get the full url
+     *
+     * @return string
+     */
+    public function url()
+    {
+        return $this->storage()->url($this->path);
+    }
+
+    /**
      * Check if this uploaded file is an image
      *
      * @return bool
@@ -133,15 +143,5 @@ trait Uploadables
     public function isImage()
     {
         return strpos($this->mimetype, 'image/') === 0;
-    }
-
-    /**
-     * Cast to string as alternative to get the full url
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->storage()->url($this->path);
     }
 }
