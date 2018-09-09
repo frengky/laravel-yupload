@@ -2,7 +2,7 @@
 
 namespace Frengky\Yupload\Tests;
 
-use Frengky\Yupload\Events\UploadEvent;
+use Frengky\Yupload\Events\UploadCompleted;
 use Frengky\Yupload\Tests\Model\User;
 
 use Frengky\Yupload\Upload;
@@ -156,7 +156,7 @@ class UploadTests extends TestCase
     public function testEntitySoftDeletes()
     {
         $this->expectsEvents([
-            UploadEvent::class
+            UploadCompleted::class
         ]);
 
         $user = User::find(3);

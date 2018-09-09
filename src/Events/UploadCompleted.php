@@ -5,7 +5,7 @@ namespace Frengky\Yupload\Events;
 use Illuminate\Queue\SerializesModels;
 use Frengky\Yupload\Upload;
 
-class UploadEvent
+class UploadCompleted
 {
     use SerializesModels;
 
