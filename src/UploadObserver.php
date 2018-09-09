@@ -5,6 +5,8 @@ namespace Frengky\Yupload;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
+use Frengky\Yupload\Events\UploadEvent;
+
 class UploadObserver
 {
     /**
@@ -19,6 +21,7 @@ class UploadObserver
             $upload->{$upload->getKeyName()} = Str::uuid()->toString();
             list($path, $filename) = explode('/', $upload->path);
             if ($storagePath = $upload->storage()->putFileAs($path, $upload->file, $filename)) {
+                event(new UploadEvent($upload, $storagePath));
                 return true;
             }
         }
@@ -39,6 +42,7 @@ class UploadObserver
             $hashName = Str::random(40) . ( $ext ? ".$ext" : '' );
             $upload->path = $path . '/' . $hashName;
             if ($storagePath = $upload->storage()->putFileAs($path, $upload->file, $hashName)) {
+                event(new UploadEvent($upload, $storagePath));
                 return true;
             }
         }
