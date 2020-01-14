@@ -2,6 +2,7 @@
 
 namespace Frengky\Yupload\Concerns;
 
+use Illuminate\Support\Str;
 use Frengky\Yupload\Upload;
 
 trait HasUploads {
@@ -64,7 +65,7 @@ trait HasUploads {
      */
     public function setUploadsAttribute($value)
     {
-        $path = snake_case((new \ReflectionClass($this))->getShortName());
+        $path = Str::snake((new \ReflectionClass($this))->getShortName());
 
         $files = (array) $value;
         $uploads = [];
@@ -107,7 +108,7 @@ trait HasUploads {
                 }
             }
 
-            $path = snake_case((new \ReflectionClass($this))->getShortName());
+            $path = Str::snake((new \ReflectionClass($this))->getShortName());
             $this->virtualAttributes[$key] = Upload::make($value, $path, $key);
         }
     }
